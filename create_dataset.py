@@ -135,7 +135,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--image", type=str, help="Path to the input images", default='')
     parser.add_argument("-d", "--debug", action='store_true', help="Debug mode", default=0)
-    parser.add_argument("-n", "--number", type=int, help="the number of training images", default=0)
+    parser.add_argument("-n", "--number", type=int, help="the number of training images", default=100000)
 
     parser.add_argument("-a", "--data-root", type=str, help='dataset root')
 
@@ -149,7 +149,7 @@ if __name__ == '__main__':
     for f in pathlib.Path(args["image"]).glob("**/*.jpg"):
         if (args['debug']):
             print("processing {}".format(f))
-        if (f in file_dict):
+        if (str(f) in file_dict):
             print("{0} has more than one copy".format(f))
             continue
         file_dict[str(f)] = 1
@@ -160,13 +160,14 @@ if __name__ == '__main__':
 
         img_labels = getLocation(txtfile, f, args["data_root"])
         if (len(img_labels) == 0):
+            print("Did not find labels in {0}".format(f))
             continue
         label_count += len(img_labels)
-        with open(os.path.join(args['data_root'], "labels.txt"), "a+") as f:
+        with open(os.path.join(args['data_root'], "labels.txt"), "a+") as ff:
             for l in img_labels:
-                f.write("{} {}\n".format(l[0], ''.join(l[1])))
+                ff.write("{} {}\n".format(l[0], ''.join(l[1])))
         count += 1
-        if (count > args['number']):
+        if (count >= args['number']):
             break
     print("Orgin Images: {}, Labeled Images: {}".format(count, label_count))
         
