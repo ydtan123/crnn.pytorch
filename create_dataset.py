@@ -149,10 +149,10 @@ if __name__ == '__main__':
     for f in pathlib.Path(args["image"]).glob("**/*.jpg"):
         if (args['debug']):
             print("processing {}".format(f))
-        if (str(f) in file_dict):
+        if (f.name in file_dict):
             print("{0} has more than one copy".format(f))
             continue
-        file_dict[str(f)] = 1
+        file_dict[f.name] = 1
         txtfile = f.with_suffix(".txt")
         if (not os.path.isfile(str(txtfile))):
             print("GT file for {0} does not exist".format(f))
