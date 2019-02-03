@@ -1,10 +1,25 @@
 #!/usr/bin/python3
 import argparse
-import math
+import cv2
 import os
 import lmdb # install lmdb by "pip install lmdb"
-import cv2
+import math
 import numpy as np
+import pathlib
+
+
+def groupByY(letters):
+    groups = []
+    for l in letters:
+        found = False
+        for g in groups:
+            if ((math.fabs(l[4] - g[-1][4]) < (l[4] - l[2]) / 2)
+                and (math.fabs(l[3] - g[-1][1]) < (l[3] - l[1]) * 4)):
+                g.append(l)
+                found = True
+        if (not found):
+            groups.append([l])
+    return groups
 
 def getLocation(txtfile, img_file, data_out):
     #0 0.056711 0.629032 0.030246 0.204301
@@ -27,25 +42,28 @@ def getLocation(txtfile, img_file, data_out):
                 continue
             cx = float(data[1]) * imgw
             cy = float(data[2]) * imgh
-            w = float(data[3]) * imgw
-            h = float(data[4]) * imgh
-            symbols.append((data[0], cx, cy, w/2, h/2))
+            w = float(data[3]) * imgw / 2
+            h = float(data[4]) * imgh / 2
+            symbols.append((data[0], int(cx - w), int(cy - h), int(cx + w), int(cy + h)))
     if (len(symbols) == 0):
         return None
-    symbols_sorted = sorted(symbols, key=lambda x: x[1])
-    words = []
-    for words_len in [1, 2, 3, 4]:
-        for idx in range(0, len(symbols_sorted), words_len):
-            sf = symbols_sorted[idx]
-            sl = symbols_sorted[idx + words_len - 1]
-            ty = math.min(sf[2] - sf[4], sl[2] - sl[4])
-            tx = sf[1] - sf[3]
-            by = math.max(sl[2] + sl[4], sl[2] + sl[4])
-            bx = sl[1] + sl[3]
-            img_name = 'img_{}_{}_{}.jpg'.format(img_file, idx, words_len)
-            imwrite(img_name, img[ty:by+1, tx:bx+1])
-            img_label_list.append((img_name, [s[0] for s in symbols_sorted[idx : idx + word_len]]))
-    return
+    letter_groups = groupByY(sorted(symbols, key=lambda x: x[1]))
+    gidx = 0
+    for g in letter_groups:
+        for word_len in [1, 2, 3, 4]:
+            for idx in range(len(g) - word_len):
+                last_idx = idx + word_len
+                sf = g[idx]
+                sl = g[last_idx - 1]
+                ty = min(sf[2], sl[2])
+                tx = sf[1]
+                by = max(sf[4], sl[4])
+                bx = sl[3]
+                img_name = 'img_{}_g{}_i{}_l{}.jpg'.format(img_file.stem, gidx, idx, word_len)
+                cv2.imwrite(os.path.join(data_out, img_name), img[ty:by+1, tx:bx+1])
+                img_label_list.append((img_name, [s[0] for s in g[idx : last_idx]]))
+        gidx += 1
+    return img_label_list
 
 def checkImageIsValid(imageBin):
     if imageBin is None:
@@ -119,4 +137,25 @@ if __name__ == '__main__':
     parser.add_argument("-a", "--data-root", type=str, help='dataset root')
 
     args = vars(parser.parse_args())
+    if not os.path.exists(args['data_root']):
+        os.makedirs(args['data_root'])
+
+    file_dict = {}
+    for f in pathlib.Path(args["image"]).glob("**/*.jpg"):
+        if (args['debug']):
+            print("processing {}".format(f))
+        if (f in file_dict):
+            print("{0} has more than one copy".format(f))
+            continue
+        file_dict[str(f)] = 1
+        txtfile = f.with_suffix(".txt")
+        if (not os.path.isfile(str(txtfile))):
+            print("GT file for {0} does not exist".format(f))
+            continue
+
+        img_labels = getLocation(txtfile, f, args["data_root"])
+        with open(os.path.join(args['data_root'], "labels.txt"), "w+") as f:
+            for l in img_labels:
+                f.write("{} {}\n".format(l[0], ''.join(l[1])))
+
 
