@@ -60,7 +60,8 @@ def getLocation(txtfile, img_file, data_out):
                 by = max(sf[4], sl[4])
                 bx = sl[3]
                 img_name = 'img_{}_g{}_i{}_l{}.jpg'.format(img_file.stem, gidx, idx, word_len)
-                cv2.imwrite(os.path.join(data_out, img_name), img[ty:by+1, tx:bx+1])
+                if (not cv2.imwrite(os.path.join(data_out, img_name), img[ty:by+1, tx:bx+1])):
+                    print("failed to write image file: {0}".format(img_name))
                 img_label_list.append((img_name, [s[0] for s in g[idx : last_idx]]))
         gidx += 1
     return img_label_list
