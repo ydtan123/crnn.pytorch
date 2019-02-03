@@ -46,7 +46,7 @@ def getLocation(txtfile, img_file, data_out):
             h = float(data[4]) * imgh / 2
             symbols.append((data[0], int(cx - w), int(cy - h), int(cx + w), int(cy + h)))
     if (len(symbols) == 0):
-        return None
+        return []
     letter_groups = groupByY(sorted(symbols, key=lambda x: x[1]))
     gidx = 0
     for g in letter_groups:
@@ -157,6 +157,8 @@ if __name__ == '__main__':
             continue
 
         img_labels = getLocation(txtfile, f, args["data_root"])
+        if (len(img_labels) == 0):
+            continue
         with open(os.path.join(args['data_root'], "labels.txt"), "a+") as f:
             for l in img_labels:
                 f.write("{} {}\n".format(l[0], ''.join(l[1])))
