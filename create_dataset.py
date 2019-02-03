@@ -144,6 +144,7 @@ if __name__ == '__main__':
 
     file_dict = {}
     count = 0
+    label_count = 0
     for f in pathlib.Path(args["image"]).glob("**/*.jpg"):
         if (args['debug']):
             print("processing {}".format(f))
@@ -159,12 +160,14 @@ if __name__ == '__main__':
         img_labels = getLocation(txtfile, f, args["data_root"])
         if (len(img_labels) == 0):
             continue
+        label_count += len(img_labels)
         with open(os.path.join(args['data_root'], "labels.txt"), "a+") as f:
             for l in img_labels:
                 f.write("{} {}\n".format(l[0], ''.join(l[1])))
         count += 1
         if (count > args['number']):
             break
+    print("Orgin Images: {}, Labeled Images: {}".format(count, label_count))
         
 
 
