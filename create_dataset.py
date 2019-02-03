@@ -140,6 +140,8 @@ if __name__ == '__main__':
     parser.add_argument("-a", "--data-root", type=str, help='dataset root')
     parser.add_argument("-e", "--exclude", type=str, help='exclude list')
 
+    parser.add_argument("-s", "--store", type=str, help='storage name')
+
     args = vars(parser.parse_args())
     if not os.path.exists(args['data_root']):
         os.makedirs(args['data_root'])
@@ -191,7 +193,7 @@ if __name__ == '__main__':
             img, label = l.split(' ')
             img_list.append(img)
             label_list.append(label)
-    createDataset(args['data_root'], './train.lmdb', img_list, label_list)
+    createDataset(args['data_root'], args["store"], img_list, label_list)
 
 
         
