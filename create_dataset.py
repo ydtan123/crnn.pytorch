@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 import argparse
 import cv2
 import os
@@ -83,7 +83,7 @@ def writeCache(env, cache):
             txn.put(k, v)
 
 
-def createDataset(outputPath, imagePathList, labelList, lexiconList=None, checkValid=True):
+def createDataset(dataPath, outputPath, imagePathList, labelList, lexiconList=None, checkValid=True):
     """
     Create LMDB dataset for CRNN training.
 
@@ -99,13 +99,13 @@ def createDataset(outputPath, imagePathList, labelList, lexiconList=None, checkV
     env = lmdb.open(outputPath, map_size=1099511627776)
     cache = {}
     cnt = 1
-    for i in xrange(nSamples):
-        imagePath = imagePathList[i]
+    for i in range(nSamples):
+        imagePath = os.path.join(dataPath, imagePathList[i])
         label = labelList[i]
         if not os.path.exists(imagePath):
             print('%s does not exist' % imagePath)
             continue
-        with open(imagePath, 'r') as f:
+        with open(imagePath, 'rb') as f:
             imageBin = f.read()
         if checkValid:
             if not checkImageIsValid(imageBin):
@@ -170,6 +170,17 @@ if __name__ == '__main__':
         if (count >= args['number']):
             break
     print("Orgin Images: {}, Labeled Images: {}".format(count, label_count))
+
+    img_list = []
+    label_list = []
+    with open(os.path.join(args['data_root'], "labels.txt"), 'r') as f:
+        for l in f:
+            img, label = l.split(' ')
+            img_list.append(img)
+            label_list.append(label)
+    createDataset(args['data_root'], './train.lmdb', img_list, label_list)
+
+
         
 
 
