@@ -134,6 +134,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--image", type=str, help="Path to the input images", default='')
     parser.add_argument("-d", "--debug", action='store_true', help="Debug mode", default=0)
+    parser.add_argument("-n", "--number", type=int, help="the number of training images", default=0)
+
     parser.add_argument("-a", "--data-root", type=str, help='dataset root')
 
     args = vars(parser.parse_args())
@@ -141,6 +143,7 @@ if __name__ == '__main__':
         os.makedirs(args['data_root'])
 
     file_dict = {}
+    count = 0
     for f in pathlib.Path(args["image"]).glob("**/*.jpg"):
         if (args['debug']):
             print("processing {}".format(f))
@@ -154,8 +157,12 @@ if __name__ == '__main__':
             continue
 
         img_labels = getLocation(txtfile, f, args["data_root"])
-        with open(os.path.join(args['data_root'], "labels.txt"), "w+") as f:
+        with open(os.path.join(args['data_root'], "labels.txt"), "a+") as f:
             for l in img_labels:
                 f.write("{} {}\n".format(l[0], ''.join(l[1])))
+        count += 1
+        if (count > args['number']):
+            break
+        
 
 
