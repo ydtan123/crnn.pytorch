@@ -138,10 +138,16 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--number", type=int, help="the number of training images", default=100000)
 
     parser.add_argument("-a", "--data-root", type=str, help='dataset root')
+    parser.add_argument("-e", "--exclude", type=str, help='exclude list')
 
     args = vars(parser.parse_args())
     if not os.path.exists(args['data_root']):
         os.makedirs(args['data_root'])
+
+    exclude_list = {}
+    with open(args['exclude']) as f:
+        for l in f:
+            exclude_list[l] = 1
 
     file_dict = {}
     count = 0
@@ -151,6 +157,9 @@ if __name__ == '__main__':
             print("processing {}".format(f))
         if (f.name in file_dict):
             print("{0} has more than one copy".format(f))
+            continue
+        if (f.name in exclude_list):
+            print("{0} is excluded".format(f.name))
             continue
         file_dict[f.name] = 1
         txtfile = f.with_suffix(".txt")
@@ -170,7 +179,11 @@ if __name__ == '__main__':
         if (count >= args['number']):
             break
     print("Orgin Images: {}, Labeled Images: {}".format(count, label_count))
-
+    
+    with open("filelist.txt", "w+") as f:
+        for l in file_dict.keys():
+            f.write("{0}\n".format(l))
+    
     img_list = []
     label_list = []
     with open(os.path.join(args['data_root'], "labels.txt"), 'r') as f:
