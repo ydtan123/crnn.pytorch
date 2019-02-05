@@ -138,7 +138,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--number", type=int, help="the number of training images", default=100000)
 
     parser.add_argument("-a", "--data-root", type=str, help='dataset root')
-    parser.add_argument("-e", "--exclude", type=str, help='exclude list')
+    parser.add_argument("-e", "--exclude", type=str, help='exclude list', default='')
 
     parser.add_argument("-s", "--store", type=str, help='storage name')
 
@@ -147,10 +147,12 @@ if __name__ == '__main__':
         os.makedirs(args['data_root'])
 
     exclude_list = {}
-    with open(args['exclude']) as f:
-        for l in f:
-            exclude_list[l] = 1
-
+    if (args["exclude"] != ''):
+        with open(args['exclude']) as f:
+            for l in f:
+                exclude_list[l.strip()] = 1
+    print("{} files excluded".format(len(exclude_list)))
+          
     file_dict = {}
     count = 0
     label_count = 0
@@ -182,7 +184,7 @@ if __name__ == '__main__':
             break
     print("Orgin Images: {}, Labeled Images: {}".format(count, label_count))
     
-    with open("filelist.txt", "w+") as f:
+    with open(args["data_root"] + ".txt", "w+") as f:
         for l in file_dict.keys():
             f.write("{0}\n".format(l))
     
@@ -190,7 +192,11 @@ if __name__ == '__main__':
     label_list = []
     with open(os.path.join(args['data_root'], "labels.txt"), 'r') as f:
         for l in f:
-            img, label = l.split(' ')
+            img, label = l.strip().split(' ')
+            img = img.strip()
+            label = label.strip()
+            if (img == '' or label == ''):
+                continue
             img_list.append(img)
             label_list.append(label)
     createDataset(args['data_root'], args["store"], img_list, label_list)
