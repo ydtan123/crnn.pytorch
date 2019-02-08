@@ -45,7 +45,15 @@ def get_gt_symbols(txtfile, imgw, imgh, is_digit, debug=False):
     return symbols
 
 
-def get_box_groups(txtfile, imgw, imgh, length, is_digit, debug=False):
+def get_groups(txtfile, imgw, imgh, is_digit, debug=False):
+    symbols = get_gt_symbols(txtfile, imgw, imgh, is_digit, debug)
+    if (len(symbols) == 0):
+        print("Cannot find symbols in gt file")
+        return []
+    return group_by_y(sorted(symbols, key=lambda x: x[1]))
+
+    
+def get_segments(txtfile, imgw, imgh, length, is_digit, debug=False):
     symbols = get_gt_symbols(txtfile, imgw, imgh, is_digit, debug)
     if (len(symbols) == 0):
         print("Cannot find symbols in gt file")
@@ -67,10 +75,6 @@ def get_box_groups(txtfile, imgw, imgh, length, is_digit, debug=False):
                 tx = sf[1]
                 by = max([s[4] for s in g[idx : last_idx + 1]])
                 bx = sl[3]
-                #img_name = 'img_{}_g{}_i{}_l{}.jpg'.format(img_file.stem, gidx, idx, word_len)
-                #if (not cv2.imwrite(os.path.join(data_out, img_name), img[ty:by+1, tx:bx+1])):
-                #    print("failed to write image file: {}, ({},{}), ({},{})".format(img_name, ty, by+1, tx, bx+1))
-                #img_label_list.append((img_name, [s[0] for s in g[idx : last_idx + 1]]))
                 img_label_list.append((gidx, idx, [s for s in g[idx : last_idx + 1]]))
         gidx += 1
     return img_label_list, max_len
@@ -79,7 +83,7 @@ def get_box_groups(txtfile, imgw, imgh, length, is_digit, debug=False):
 def gen_samples(txtfile, img_file, data_out, length, is_digit=True, debug=False):
     img = cv2.imread(str(img_file))
     imgh, imgw, _ = img.shape
-    label_info_list, max_len = get_box_groups(txtfile, imgw, imgh, length, is_digit, debug)
+    label_info_list, max_len = get_segments(txtfile, imgw, imgh, length, is_digit, debug)
     img_label_list = []
     for label in label_info_list:
         g = label[2]
