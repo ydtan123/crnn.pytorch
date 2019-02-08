@@ -52,7 +52,7 @@ def get_groups(txtfile, imgw, imgh, is_digit, debug=False):
         return []
     return group_by_y(sorted(symbols, key=lambda x: x[1]))
 
-    
+
 def get_segments(txtfile, imgw, imgh, length, is_digit, debug=False):
     symbols = get_gt_symbols(txtfile, imgw, imgh, is_digit, debug)
     if (len(symbols) == 0):
