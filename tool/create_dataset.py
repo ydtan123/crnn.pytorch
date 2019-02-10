@@ -3,6 +3,7 @@ import argparse
 import cv2
 import os
 import lmdb # install lmdb by "pip install lmdb"
+import logging
 import math
 import numpy as np
 import pathlib
@@ -137,7 +138,7 @@ def createDataSet(image_files, data_root, dataset_name, db=True, length=10):
 if __name__ == '__main__':
     ## Arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--image", type=str, help="Path to the input images", default='')
+    parser.add_argument("-i", "--image", type=str, help="Path to one input image", default='')
     parser.add_argument("-f", "--file-list", type=str, help="list of image files", default='')
 
     parser.add_argument("-d", "--debug", action='store_true', help="Debug mode", default=0)
@@ -156,9 +157,14 @@ if __name__ == '__main__':
         sys.exit(0)
     
     img_files = get_image_list(args.file_list)
+    logging.debug("Found {} images".format(len(img_files)))
+    if (args.number + args.tests > len(img_files)):
+        logging.error("The number of images are less than needed")
+        sys.exit(0)
+        
     random.shuffle(img_files)
-    createDataSet(img_files[ : args.number], args.data_root, "trainset", args.len)
+    createDataSet(img_files[ : args.number], args.data_root, "trainset", length=args.len)
 
     last_sample = min(args.number + args.tests, len(img_files))
-    createDataSet(img_files[args.number : last_sample], args.data_root, "valset", args.len) 
+    createDataSet(img_files[args.number : last_sample], args.data_root, "valset", length=args.len) 
         

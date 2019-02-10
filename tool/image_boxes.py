@@ -1,6 +1,8 @@
 import cv2
+import logging
 import os
 import lmdb # install lmdb by "pip install lmdb"
+import logging
 import math
 import numpy as np
 import pathlib
@@ -12,53 +14,57 @@ def line_intersect(a, b):
 
 def group_by_y(letters):
     groups = []
-    for l in letters:
+    for l in sorted(letters, key=lambda x: x[1]):
         found = False
         for g in groups:
+            logging.debug("l:{}, g:{}, intersect:{}".format(l, g[-1], line_intersect((g[-1][2], g[-1][4]), (l[2], l[4])))) 
             if (line_intersect((g[-1][2], g[-1][4]), (l[2], l[4]))
                 and (math.fabs(l[1] - g[-1][3]) < (l[3] - l[1]) * 2)):
                 g.append(l)
                 found = True
+                break
         if (not found):
             groups.append([l])
+    for g in groups:
+        logging.debug("Group: l{} {}".format(len(g), ''.join([s[0] for s in g])))
     return groups
 
 
-def get_gt_symbols(txtfile, imgw, imgh, is_digit, debug=False):
+def get_gt_symbols(txtfile, imgw, imgh, is_digit=True, debug=False):
     symbols = []
     with open(str(txtfile)) as f:
         for line in f:
             data = [d for d in line.split(' ')]
             if (len(data) < 5):
-                print("Incorrect data {0} in {1}".format(line, txtfile))
+                logging.error("Incorrect data {0} in {1}".format(line, txtfile))
                 continue
             dval = int(data[0])
             if (is_digit and (dval < 0 or dval > 9)):
-                if (debug):
-                    print("Invalid number {0} in {1}".format(data[0], txtfile))
+                logging.debug("Invalid number {0} in {1}".format(data[0], txtfile))
                 continue
             cx = float(data[1]) * imgw
             cy = float(data[2]) * imgh
             w = float(data[3]) * imgw / 2
             h = float(data[4]) * imgh / 2
             symbols.append((data[0], int(cx - w), int(cy - h), int(cx + w), int(cy + h)))
+            logging.debug("symbol: {}, ({},{})({},{})".format(data[0], int(cx - w), int(cy - h), int(cx + w), int(cy + h)))
     return symbols
 
 
 def get_groups(txtfile, imgw, imgh, is_digit, debug=False):
     symbols = get_gt_symbols(txtfile, imgw, imgh, is_digit, debug)
     if (len(symbols) == 0):
-        print("Cannot find symbols in gt file")
+        logging.error("Cannot find symbols in gt file")
         return []
-    return group_by_y(sorted(symbols, key=lambda x: x[1]))
+    return group_by_y(symbols)
 
 
 def get_segments(txtfile, imgw, imgh, length, is_digit, debug=False):
     symbols = get_gt_symbols(txtfile, imgw, imgh, is_digit, debug)
     if (len(symbols) == 0):
-        print("Cannot find symbols in gt file")
+        logging.error("Cannot find symbols in gt file")
         return [], 0
-    letter_groups = group_by_y(sorted(symbols, key=lambda x: x[1]))
+    letter_groups = group_by_y(symbols)
     gidx = 0
     max_len = 0
     img_label_list = []
@@ -93,6 +99,6 @@ def gen_samples(txtfile, img_file, data_out, length, is_digit=True, debug=False)
         bx = g[-1][3]
         img_name = 'img_{}_g{}_i{}_l{}.jpg'.format(img_file.stem, label[0], label[1], len(g))
         if (not cv2.imwrite(os.path.join(data_out, img_name), img[ty:by+1, tx:bx+1])):
-            print("failed to write image file: {}, ({},{}), ({},{})".format(img_name, ty, by+1, tx, bx+1))
+            logging.error("failed to write image file: {}, ({},{}), ({},{})".format(img_name, ty, by+1, tx, bx+1))
         img_label_list.append((img_name, [s[0] for s in g]))
     return img_label_list, max_len
